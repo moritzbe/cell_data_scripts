@@ -2,22 +2,46 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 from scipy import ndimage as nd
-
+import cv2
 import code
+
+
 def binaryMask(mask):
-	print np.unique(mask, return_counts=True)
-	print np.unique(mask)
+	# print np.unique(mask, return_counts=True)
+	# print np.unique(mask)
 	mask[mask >= 1] = 1
 	mask[mask < 1] = 0
 	mask = np.transpose(mask)
-	plt.figure()
-	plt.imshow(mask)
-	plt.show()
+	mask = morphOp(mask)
+	# plt.figure()
+	# plt.imshow(mask)
+	# plt.show()
+
 	# print np.unique(mask)
 	# mask[mask >= 1] = 1
 	# mask[mask < 1] = 0
 	# mask = np.transpose(mask)
 	return mask
+
+def morphOp(mask):
+	kernel = np.ones((10,10),np.uint8)
+	# erosion
+	# erosion = cv2.erode(mask, kernel, iterations = 1)
+	# opening
+	opening = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations = 1)
+	# fig = plt.figure()
+	# a=fig.add_subplot(1,3,1)
+	# imgplot = plt.imshow(mask)
+	# a.set_title('Normal')
+	# a=fig.add_subplot(1,3,2)
+	# imgplot = plt.imshow(erosion)
+	# a.set_title('Erosion')
+	# a=fig.add_subplot(1,3,3)
+	# imgplot = plt.imshow(opening)
+	# a.set_title('Opening')
+	# plt.show()
+	return mask
+
 
 def detectBlobs(mask):
 	base_array, num_features = nd.label(mask)
@@ -125,7 +149,7 @@ for i in masks[0:30]:
 
 	# printSingleCroppedCells(ch1_m, ch2_m, ch3_m, ch4_m, cell_coords)
 
-plt.show()
+#plt.show()
 
 # plt.hist(mask.ravel(), bins=50, range=(0.0, 41), fc='k', ec='k')
 
