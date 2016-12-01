@@ -6,13 +6,14 @@ import cv2
 import code
 
 
-def binaryMask(mask):
+def binaryMask(mask, padding=0, kernelsize = 10):
 	# print np.unique(mask, return_counts=True)
 	# print np.unique(mask)
 	mask[mask >= 1] = 1
 	mask[mask < 1] = 0
 	mask = np.transpose(mask)
-	mask = morphOp(mask)
+	mask = 	np.lib.pad(mask, padding, zeroPad)
+	mask = morphOp(mask, kernelsize)
 	# plt.figure()
 	# plt.imshow(mask)
 	# plt.show()
@@ -23,27 +24,20 @@ def binaryMask(mask):
 	# mask = np.transpose(mask)
 	return mask
 
-def morphOp(mask):
-	kernel = np.ones((10,10),np.uint8)
-	# erosion
-	# erosion = cv2.erode(mask, kernel, iterations = 1)
-	# opening
+def morphOp(mask, kernelsize):
+	kernel = np.ones((kernelsize, kernelsize),np.uint8)
 	opening = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations = 1)
-	# fig = plt.figure()
-	# a=fig.add_subplot(1,3,1)
-	# imgplot = plt.imshow(mask)
-	# a.set_title('Normal')
-	# a=fig.add_subplot(1,3,2)
-	# imgplot = plt.imshow(erosion)
-	# a.set_title('Erosion')
-	# a=fig.add_subplot(1,3,3)
-	# imgplot = plt.imshow(opening)
-	# a.set_title('Opening')
-	# plt.show()
-	return mask
+	fig = plt.figure()
+	a=fig.add_subplot(1,2,1)
+	imgplot = plt.imshow(mask)
+	a.set_title('Normal')
+	a=fig.add_subplot(1,2,2)
+	imgplot = plt.imshow(opening)
+	a.set_title('Opening')
+	plt.show()
+	return opening
 
-
-def detectBlobs(mask):
+def detectBlobs(mask, cell_pad):
 	base_array, num_features = nd.label(mask)
 	indices = np.unique(base_array, return_counts=True)
 	threshold_size = 256
@@ -56,16 +50,20 @@ def detectBlobs(mask):
 		labeled_array = np.zeros_like(base_array)
 		labeled_array[base_array != entry] = 0
 		labeled_array[base_array == entry] = 1
-		padding = 20
-		cell_x_l = np.min(np.where(labeled_array == 1)[1])
-		cell_x_r = np.max(np.where(labeled_array == 1)[1])
-		cell_y_b = np.min(np.where(labeled_array == 1)[0])
-		cell_y_t = np.max(np.where(labeled_array == 1)[0])
+		cell_x_l = np.min(np.where(labeled_array == 1)[1]) - cell_pad
+		cell_x_r = np.max(np.where(labeled_array == 1)[1]) + cell_pad
+		cell_y_b = np.min(np.where(labeled_array == 1)[0]) - cell_pad
+		cell_y_t = np.max(np.where(labeled_array == 1)[0]) + cell_pad
 		coordinates = {'x_min': cell_x_l, 'x_max': cell_x_r, 'y_min': cell_y_b, 'y_max': cell_y_t}
 		cell_coords.append(coordinates)
-	return cell_coords	
+	return cell_coords
 
-def printWholeImages(mask, ch1, ch2, ch3, ch4, ch1_m, ch2_m, ch3_m, ch4_m):
+def zeroPad(vector, pad_width, iaxis, kwargs):
+    vector[:pad_width[0]] = 0
+    vector[-pad_width[1]:] = 0
+    return vector
+
+def printWholeImages(mask, ch1, ch2, ch3, ch4, ch1_m):
 	print np.unique(mask)
 	fig = plt.figure()
 	a=fig.add_subplot(2,3,1)
@@ -88,7 +86,7 @@ def printWholeImages(mask, ch1, ch2, ch3, ch4, ch1_m, ch2_m, ch3_m, ch4_m):
 	a.set_title('Mask')
 	plt.show()
 
-def printSingleCroppedCells(ch1_m, ch2_m, ch3_m, ch4_m, cell_coords):
+def printSingleCroppedCells(ch1, ch2, ch3, ch4, ch1_m, mask, cell_coords):
 	# print "# of cells in image", len(cell_coords)
 	for i in xrange(len(cell_coords)):
 		cell = cell_coords[i]
@@ -131,24 +129,42 @@ print "# of images without masks:", (len(tifs)-len(masks))/4 - len(masks)
 # If there is too much noise in the TIF, no mask can be produced.
 
 
+#### ------------- Settings here: ------------ #####
+
+# Zero Padding around the image
+padding = 20
+# Opening Kernel size: Recommend 10
+kernelsize = 10
+# Cell cropping extension: Recommend 10
+cell_pad = 10
+
+
+
 # Looping over DIB masks and all channels to select image:
-for i in masks[0:30]:
-	mask = binaryMask(plt.imread(i[:-6]+"o1.TIF"))
-	# Mask have to be point-reflected
+for i in masks[0:10]:
+	# Masks have to be point-reflected
+	mask = binaryMask(plt.imread(i[:-6]+"o1.TIF"), padding, kernelsize)
 	ch1 = plt.imread(i[:-6]+"d0.TIF")
 	ch2 = plt.imread(i[:-6]+"d1.TIF")
 	ch3 = plt.imread(i[:-6]+"d2.TIF")
 	ch4 = plt.imread(i[:-6]+"d3.TIF")
+
+	# ZeroPadding
+	ch1 = np.lib.pad(ch1, padding, zeroPad)
+	ch2 = np.lib.pad(ch2, padding, zeroPad)
+	ch3 = np.lib.pad(ch3, padding, zeroPad)
+	ch4 = np.lib.pad(ch4, padding, zeroPad)
+
+	# Applying the masks not really necessary
 	ch1_m = ch1 * mask
-	ch2_m = ch2 * mask
-	ch3_m = ch3 * mask
-	ch4_m = ch4 * mask
-	cell_coords = detectBlobs(mask)
+	# ch2_m = ch2 * mask
+	# ch3_m = ch3 * mask
+	# ch4_m = ch4 * mask
+	cell_coords = detectBlobs(mask, cell_pad)
 
-	# printWholeImages(mask, ch1, ch2, ch3, ch4, ch1_m, ch2_m, ch3_m, ch4_m)
+	printWholeImages(mask, ch1, ch2, ch3, ch4, ch1_m)
 
-	# printSingleCroppedCells(ch1_m, ch2_m, ch3_m, ch4_m, cell_coords)
-
+	printSingleCroppedCells(ch1, ch2, ch3, ch4, ch1_m, mask, cell_coords)
 #plt.show()
 
 # plt.hist(mask.ravel(), bins=50, range=(0.0, 41), fc='k', ec='k')
