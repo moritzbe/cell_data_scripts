@@ -27,24 +27,23 @@ def binaryMask(mask, padding=0, kernelsize = 10):
 def morphOp(mask, kernelsize):
 	kernel = np.ones((kernelsize, kernelsize),np.uint8)
 	opening = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations = 1)
-	fig = plt.figure()
-	a=fig.add_subplot(1,2,1)
-	imgplot = plt.imshow(mask)
-	a.set_title('Normal')
-	a=fig.add_subplot(1,2,2)
-	imgplot = plt.imshow(opening)
-	a.set_title('Opening')
-	plt.show()
+	# fig = plt.figure()
+	# a=fig.add_subplot(1,2,1)
+	# imgplot = plt.imshow(mask)
+	# a.set_title('Normal')
+	# a=fig.add_subplot(1,2,2)
+	# imgplot = plt.imshow(opening)
+	# a.set_title('Opening')
+	# plt.show()
 	return opening
 
-def detectBlobs(mask, cell_pad):
+def detectBlobs(mask, cell_pad, minimum_cellsize, maximum_cellsize):
 	base_array, num_features = nd.label(mask)
 	indices = np.unique(base_array, return_counts=True)
-	threshold_size = 256
 	vals = []
 	cell_coords = []
 	for i in xrange(1, len(indices[1])):
-		if indices[1][i] > threshold_size:
+		if (indices[1][i] >= minimum_cellsize) & (indices[1][i] <= maximum_cellsize):
 			vals.append(i)
 	for entry in vals:
 		labeled_array = np.zeros_like(base_array)
@@ -63,28 +62,50 @@ def zeroPad(vector, pad_width, iaxis, kwargs):
     vector[-pad_width[1]:] = 0
     return vector
 
+def cellSize(cell_coords):
+	sizes = []
+	for i in xrange(len(cell_coords)):
+		x_range = cell_coords[i]['x_max'] - cell_coords[i]['x_min']
+		y_range = cell_coords[i]['y_max'] - cell_coords[i]['y_min']
+		sizes.append(x_range * y_range)
+		# sizes.append(y_range)
+	return sizes
+
 def printWholeImages(mask, ch1, ch2, ch3, ch4, ch1_m):
 	print np.unique(mask)
-	fig = plt.figure()
-	a=fig.add_subplot(2,3,1)
-	imgplot = plt.imshow(ch1)
-	a.set_title('Ch1')
-	a=fig.add_subplot(2,3,2)
-	imgplot = plt.imshow(ch2)
-	a.set_title('Ch2')
-	a=fig.add_subplot(2,3,3)
-	imgplot = plt.imshow(ch3)
-	a.set_title('Ch3')
-	a=fig.add_subplot(2,3,4)
-	imgplot = plt.imshow(ch4)
-	a.set_title('Ch4')
-	a=fig.add_subplot(2,3,5)
-	imgplot = plt.imshow(ch1_m)
-	a.set_title('Ch1_Masked')
-	a=fig.add_subplot(2,3,6)
-	imgplot = plt.imshow(mask)
-	a.set_title('Mask')
+	# fig = plt.figure()
+	# a=fig.add_subplot(2,3,1)
+	# imgplot = plt.imshow(ch1)
+	# a.set_title('Ch1')
+	# a=fig.add_subplot(2,3,2)
+	# imgplot = plt.imshow(ch2)
+	# a.set_title('Ch2')
+	# a=fig.add_subplot(2,3,3)
+	# imgplot = plt.imshow(ch3)
+	# a.set_title('Ch3')
+	# a=fig.add_subplot(2,3,4)
+	# imgplot = plt.imshow(ch4)
+	# a.set_title('Ch4')
+	# a=fig.add_subplot(2,3,5)
+	# imgplot = plt.imshow(ch1_m)
+	# a.set_title('Ch1_Masked')
+	# a=fig.add_subplot(2,3,6)
+	# imgplot = plt.imshow(mask)
+	# a.set_title('Mask')
+	# plt.show()
+
+def plotHistogram(x, min_x, max_x):
+	# the histogram of the data
+	n, bins, patches = plt.hist(x, 30)
+
+	plt.xlabel('x and y widths')
+	plt.ylabel('Frequency')
+	plt.title(r'Width and Size Frequency Plot')
+	plt.axis([min_x, max_x, None, None])
+	plt.grid(False)
+
 	plt.show()
+
 
 def printSingleCroppedCells(ch1, ch2, ch3, ch4, ch1_m, mask, cell_coords):
 	# print "# of cells in image", len(cell_coords)
@@ -109,9 +130,10 @@ def printSingleCroppedCells(ch1, ch2, ch3, ch4, ch1_m, mask, cell_coords):
 		a=fig.add_subplot(2,3,6)
 		imgplot = plt.imshow(mask[cell["y_min"]:cell["y_max"],cell["x_min"]:cell["x_max"]])
 		a.set_title('Mask')
-		plt.show()	
+		# plt.show()	
 
 
+# Path to directory where images are stored
 DIR = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/TIF_images/Ex1_ch-PGP_rb-CGRP_mo-RIIb/'
 
 images_files = os.listdir(DIR) # use this for full dataset
@@ -129,7 +151,8 @@ print "# of images without masks:", (len(tifs)-len(masks))/4 - len(masks)
 # If there is too much noise in the TIF, no mask can be produced.
 
 
-#### ------------- Settings here: ------------ #####
+##### ------------- Settings here: ------------ #####
+##### ----------------------------------------- #####
 
 # Zero Padding around the image
 padding = 20
@@ -137,11 +160,16 @@ padding = 20
 kernelsize = 10
 # Cell cropping extension: Recommend 10
 cell_pad = 10
+# Cellsizes (32*32) and (128 * 128) 
+minimum_cellwidth = 18
+maximum_cellwidth = 128
+# Process images until ith mask
+max_mask = 800
 
 
-
+cellSizes = []
 # Looping over DIB masks and all channels to select image:
-for i in masks[0:10]:
+for i in masks[0:max_mask]:
 	# Masks have to be point-reflected
 	mask = binaryMask(plt.imread(i[:-6]+"o1.TIF"), padding, kernelsize)
 	ch1 = plt.imread(i[:-6]+"d0.TIF")
@@ -160,14 +188,17 @@ for i in masks[0:10]:
 	# ch2_m = ch2 * mask
 	# ch3_m = ch3 * mask
 	# ch4_m = ch4 * mask
-	cell_coords = detectBlobs(mask, cell_pad)
+	cell_coords = detectBlobs(mask, cell_pad, minimum_cellwidth**2, 8000)
+	# printing images
+	# printWholeImages(mask, ch1, ch2, ch3, ch4, ch1_m)
+	# printSingleCroppedCells(ch1, ch2, ch3, ch4, ch1_m, mask, cell_coords)
 
-	printWholeImages(mask, ch1, ch2, ch3, ch4, ch1_m)
 
-	printSingleCroppedCells(ch1, ch2, ch3, ch4, ch1_m, mask, cell_coords)
-#plt.show()
+	cellSizes.append(cellSize(cell_coords))
 
-# plt.hist(mask.ravel(), bins=50, range=(0.0, 41), fc='k', ec='k')
+frequencies = sum(cellSizes, [])
+plotHistogram(frequencies, minimum_cellwidth**2, 8000)
 
+# Debugging Tool
 
 
