@@ -37,7 +37,15 @@ def morphOp(mask, kernelsize):
 	# plt.show()
 	return opening
 
+def morphDil(mask, kernelsize):
+	kernel = np.ones((kernelsize, kernelsize),np.uint8)
+	dilation = cv2.dilate(mask, kernel, iterations = 1)
+	return dilation
+
+	dilation = cv2.dilate(img,kernel,iterations = 1)
+
 def detectBlobs(mask, cell_pad, minimum_cellsize, maximum_cellsize):
+	# Morph. operations remove tiny blobs
 	base_array, num_features = nd.label(mask)
 	indices = np.unique(base_array, return_counts=True)
 	vals = []
@@ -96,7 +104,7 @@ def printWholeImages(mask, ch1, ch2, ch3, ch4, ch1_m):
 
 def plotHistogram(x, min_x, max_x):
 	# the histogram of the data
-	n, bins, patches = plt.hist(x, 30)
+	n, bins, patches = plt.hist(x, 150)
 
 	plt.xlabel('x and y widths')
 	plt.ylabel('Frequency')
@@ -132,6 +140,45 @@ def printSingleCroppedCells(ch1, ch2, ch3, ch4, ch1_m, mask, cell_coords):
 		a.set_title('Mask')
 		# plt.show()	
 
+def storeData(ch1, ch2, ch3, ch4, mask, cell_coords, imagewidth):
+	# somehow cells are turned 90 degrees
+	ch1 = ch1 * mask
+	ch2 = ch2 * mask
+	ch3 = ch3 * mask
+	ch4 = ch4 * mask
+	cells_per_image = np.empty([1, 4, imagewidth,imagewidth])
+	for item in cell_coords:
+		height = item["x_max"] - item["x_min"]
+		width = item["y_max"] - item["y_min"]
+		cell_container = np.zeros([1, 4, imagewidth, imagewidth])
+		if (width > imagewidth) & (height <= imagewidth):
+			cell_container[0, 0, :, 0:height] = cv2.resize(ch1[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (height, imagewidth), interpolation = cv2.INTER_LINEAR)
+			cell_container[0, 1, :, 0:height] = cv2.resize(ch2[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (height, imagewidth), interpolation = cv2.INTER_LINEAR)
+			cell_container[0, 2, :, 0:height] = cv2.resize(ch3[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (height, imagewidth), interpolation = cv2.INTER_LINEAR)
+			cell_container[0, 3, :, 0:height] = cv2.resize(ch4[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (height, imagewidth), interpolation = cv2.INTER_LINEAR)
+		elif (width <= imagewidth) & (height > imagewidth):
+			cell_container[0, 0, 0:width,:] = cv2.resize(ch1[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, width), interpolation = cv2.INTER_LINEAR)
+			cell_container[0, 1, 0:width,:] = cv2.resize(ch2[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, width), interpolation = cv2.INTER_LINEAR)
+			cell_container[0, 2, 0:width,:] = cv2.resize(ch3[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, width), interpolation = cv2.INTER_LINEAR)
+			cell_container[0, 3, 0:width,:] = cv2.resize(ch4[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, width), interpolation = cv2.INTER_LINEAR)
+		elif (width > imagewidth) & (height > imagewidth):
+			cell_container[0, 0,:,:] = cv2.resize(ch1[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, imagewidth), interpolation = cv2.INTER_LINEAR)
+			cell_container[0, 1,:,:] = cv2.resize(ch2[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, imagewidth), interpolation = cv2.INTER_LINEAR)
+			cell_container[0, 2,:,:] = cv2.resize(ch3[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, imagewidth), interpolation = cv2.INTER_LINEAR)
+			cell_container[0, 3,:,:] = cv2.resize(ch4[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, imagewidth), interpolation = cv2.INTER_LINEAR)
+		else:
+			cell_container[0, 0, 0:width, 0:height] = ch1[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]]
+			cell_container[0, 1, 0:width, 0:height] = ch2[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]]
+			cell_container[0, 2, 0:width, 0:height] = ch3[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]]
+			cell_container[0, 3, 0:width, 0:height] = ch4[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]]
+						# resize to fit boundary	
+		# plt.imshow(cell_container[0, 0, :,:])
+		# plt.show()
+
+		cells_per_image = np.vstack((cells_per_image, cell_container))
+	
+	return cells_per_image
+
 
 # Path to directory where images are stored
 DIR = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/TIF_images/Ex1_ch-PGP_rb-CGRP_mo-RIIb/'
@@ -155,7 +202,7 @@ print "# of images without masks:", (len(tifs)-len(masks))/4 - len(masks)
 ##### ----------------------------------------- #####
 
 # Zero Padding around the image
-padding = 20
+padding = 10
 # Opening Kernel size: Recommend 10
 kernelsize = 10
 # Cell cropping extension: Recommend 10
@@ -163,14 +210,26 @@ cell_pad = 10
 # Cellsizes (32*32) and (128 * 128) 
 minimum_cellwidth = 18
 maximum_cellwidth = 128
+imagewidth = 80
+
+# mask dilation for cropping of final images: Recommend 5
+dilation_coef = 5
 # Process images until ith mask
-max_mask = 800
+max_mask = 100
+
 
 
 cellSizes = []
+cells = np.empty([1, 4, imagewidth, imagewidth])
+max_ch1 = 0
+max_ch2 = 0
+max_ch3 = 0
+max_ch4 = 0
 # Looping over DIB masks and all channels to select image:
 for i in masks[0:max_mask]:
 	# Masks have to be point-reflected
+	if masks.index(i)%10 == 0:
+		print "Image", masks.index(i)
 	mask = binaryMask(plt.imread(i[:-6]+"o1.TIF"), padding, kernelsize)
 	ch1 = plt.imread(i[:-6]+"d0.TIF")
 	ch2 = plt.imread(i[:-6]+"d1.TIF")
@@ -183,22 +242,40 @@ for i in masks[0:max_mask]:
 	ch3 = np.lib.pad(ch3, padding, zeroPad)
 	ch4 = np.lib.pad(ch4, padding, zeroPad)
 
-	# Applying the masks not really necessary
+	# Applying the mask
 	ch1_m = ch1 * mask
-	# ch2_m = ch2 * mask
-	# ch3_m = ch3 * mask
-	# ch4_m = ch4 * mask
+
+	# Search Maxima
+	temp_max_ch1 = np.max(ch1)
+	temp_max_ch2 = np.max(ch2)
+	temp_max_ch3 = np.max(ch3)
+	temp_max_ch4 = np.max(ch4)
+	# Setting new Maxima
+	if temp_max_ch1 > max_ch1:
+		max_ch1 = temp_max_ch1
+	if temp_max_ch2 > max_ch2:
+		max_ch2 = temp_max_ch2
+	if temp_max_ch3 > max_ch3:
+		max_ch3 = temp_max_ch3
+	if temp_max_ch4 > max_ch4:
+		max_ch4 = temp_max_ch4 
+
+	# Storing cell images in array
 	cell_coords = detectBlobs(mask, cell_pad, minimum_cellwidth**2, 8000)
+	# Mask dilation for final cropping
+	mask = morphDil(mask, dilation_coef)
+	cells_per_image = storeData(ch1, ch2, ch3, ch4, mask, cell_coords, imagewidth)
+	cells = np.vstack((cells, cells_per_image))	
+	
+
 	# printing images
 	# printWholeImages(mask, ch1, ch2, ch3, ch4, ch1_m)
 	# printSingleCroppedCells(ch1, ch2, ch3, ch4, ch1_m, mask, cell_coords)
+	# cellSizes.append(cellSize(cell_coords))
 
 
-	cellSizes.append(cellSize(cell_coords))
-
-frequencies = sum(cellSizes, [])
-plotHistogram(frequencies, minimum_cellwidth**2, 8000)
-
-# Debugging Tool
-
+code.interact(local=dict(globals(), **locals()))
+# Plott Cell Width frequency distribution
+# frequencies = sum(cellSizes, [])
+# plotHistogram(frequencies, minimum_cellwidth**2, 8000)
 
