@@ -1,21 +1,23 @@
 % List all files in folder
-listing = dir('/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/TIF_images/Ex1_ch-PGP_rb-CGRP_mo-RIIb');
+listing = dir('/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/TIF_images/Ex2_ch-PGP_rb-CGRP_mo-RIIb');
+file = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/TIF_images/Ex2_ch-PGP_rb-CGRP_mo-RIIb/';
 
 % Iterate through all files and look for DIBs
 % for idx = 1:numel(listing)
 % relevant files start at idx = 4, idx <4 gives filestructures
-for idx = 4:numel(listing)
+for idx = 3:numel(listing)
     filename = listing(idx);
     if ~isempty(strfind(filename.name,'o1.DIB')) 
-       filename.name;
-       pixels = readcdib(filename.name);
+       filename.name
+       pixels = readcdib(filename.name, file);
        idx
     end
 end
 
 
-function pixels = readcdib(filename)
+function pixels = readcdib(filename, file)
     % Get the data for the whole DIB.
+    filename = strcat(file, filename);
     fid = fopen(filename, 'r');
     buffer = fread(fid, inf, 'uint8=>uint8');
     fid = fclose(fid);
@@ -42,6 +44,3 @@ function pixels = readcdib(filename)
     filename = strcat(filename(1:end-4), '.TIF');
     imwrite(pixels, filename);
 end
-
-
-
