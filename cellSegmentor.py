@@ -218,7 +218,7 @@ def storeData(ch1, ch2, ch3, ch4, mask, cell_coords, imagewidth):
 	return cells_per_image, labels_per_image
 
 # Path to directory where images are stored
-DIR = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/TIF_images/Ex1_ch-PGP_rb-CGRP_mo-RIIb/'
+DIR = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/TIF_images/Ex2_ch-PGP_rb-CGRP_mo-RIIb/'
 
 images_files = os.listdir(DIR) # use this for full dataset
 print "# of image files, including DIBs and all channels:", len(images_files)
@@ -333,5 +333,5 @@ print "Label Frequencies are:", frequency
 # frequencies = sum(cellSizes, [])
 # plotHistogram(frequencies, minimum_cellwidth**2, 8000)
 
-np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/all_channels_80_80_full_no_zeros_in_cells", cells, allow_pickle=True, fix_imports=True)
-np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/labels_80_80_full_no_zeros_in_cells", labels.astype(int), allow_pickle=True, fix_imports=True)
+np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/PreparedData/all_channels_80_80_full_no_zeros_in_cells", cells, allow_pickle=True, fix_imports=True)
+np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/PreparedData/labels_80_80_full_no_zeros_in_cells", labels.astype(int), allow_pickle=True, fix_imports=True)
