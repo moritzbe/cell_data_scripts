@@ -13,18 +13,18 @@ def loadnumpy(filename):
 
 
 # Loading the data into X, y
-X = loadnumpy("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/all_channels_80_80_full_no_zeros_in_cells.npy")
+X = loadnumpy("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/PreparedData/all_channels_80_80_full_no_zeros_in_cells.npy")
 # X = loadnumpy("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/all_channels_80_80_full1.npy")
-labels = loadnumpy("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/labels_80_80_full_no_zeros_in_cells.npy")
+labels = loadnumpy("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/PreparedData/labels_80_80_full_no_zeros_in_cells.npy")
 
 # +/+ path
-p1 = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/LabeledImages/full_ex1_no_zeros/++/"
+p1 = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/LabeledImages/full_ex3_no_zeros/++/"
 # +/- path
-p2 = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/LabeledImages/full_ex1_no_zeros/+-/"
+p2 = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/LabeledImages/full_ex3_no_zeros/+-/"
 # -/+ path
-p3 = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/LabeledImages/full_ex1_no_zeros/-+/"
+p3 = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/LabeledImages/full_ex3_no_zeros/-+/"
 # -/- path
-p4 = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/LabeledImages/full_ex1_no_zeros/--/"
+p4 = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/LabeledImages/full_ex3_no_zeros/--/"
 # outliers
 # p5 = "/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/LabeledImages/full_ex1/outliers/"
 

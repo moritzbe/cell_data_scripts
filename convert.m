@@ -1,6 +1,6 @@
 % List all files in folder
-listing = dir('/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/TIF_images/Ex2_ch-PGP_rb-CGRP_mo-RIIb');
-file = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/TIF_images/Ex2_ch-PGP_rb-CGRP_mo-RIIb/';
+listing = dir('/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/TIF_images/Ex3_ch-PGP_rb-CGRP_mo-RIIb');
+file = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/TIF_images/Ex3_ch-PGP_rb-CGRP_mo-RIIb/';
 
 % Iterate through all files and look for DIBs
 % for idx = 1:numel(listing)

@@ -218,7 +218,7 @@ def storeData(ch1, ch2, ch3, ch4, mask, cell_coords, imagewidth):
 	return cells_per_image, labels_per_image
 
 # Path to directory where images are stored
-DIR = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/TIF_images/Ex2_ch-PGP_rb-CGRP_mo-RIIb/'
+DIR = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/TIF_images/Ex3_ch-PGP_rb-CGRP_mo-RIIb/'
 
 images_files = os.listdir(DIR) # use this for full dataset
 print "# of image files, including DIBs and all channels:", len(images_files)
@@ -260,6 +260,7 @@ imagewidth = 80
 dilation_coef = 5
 # Process images until ith mask
 max_mask = len(masks)-1
+
 
 
 
@@ -328,10 +329,11 @@ uniques, frequency = np.unique(labels[:,0], return_counts=True)
 print "Unique labels are:", uniques
 print "Label Frequencies are:", frequency
 
+print labels
 # code.interact(local=dict(globals(), **locals()))
 # Plott Cell Width frequency distribution
 # frequencies = sum(cellSizes, [])
 # plotHistogram(frequencies, minimum_cellwidth**2, 8000)
 
-np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/PreparedData/all_channels_80_80_full_no_zeros_in_cells", cells, allow_pickle=True, fix_imports=True)
-np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex2/PreparedData/labels_80_80_full_no_zeros_in_cells", labels.astype(int), allow_pickle=True, fix_imports=True)
+# np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/PreparedData/all_channels_80_80_full_no_zeros_in_cells", cells, allow_pickle=True, fix_imports=True)
+# np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/PreparedData/labels_80_80_full_no_zeros_in_cells", labels.astype(int), allow_pickle=True, fix_imports=True)
