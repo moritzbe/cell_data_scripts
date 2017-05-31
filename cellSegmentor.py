@@ -1,9 +1,11 @@
-import numpy as np	
+import numpy as np
 import os
 import matplotlib.pyplot as plt
 from scipy import ndimage as nd
 import cv2
 import code
+
+plot = True
 
 def binaryMask(mask, padding=0, kernelsize = 10):
 	# print np.unique(mask, return_counts=True)
@@ -13,9 +15,10 @@ def binaryMask(mask, padding=0, kernelsize = 10):
 	mask = np.transpose(mask)
 	mask = 	np.lib.pad(mask, padding, zeroPad)
 	mask = morphOp(mask, kernelsize)
-	# plt.figure()
-	# plt.imshow(mask)
-	# plt.show()
+	# if plot:
+		# plt.figure()
+		# plt.imshow(mask, cmap='gray')
+		# plt.show()
 
 	# print np.unique(mask)
 	# mask[mask >= 1] = 1
@@ -26,14 +29,16 @@ def binaryMask(mask, padding=0, kernelsize = 10):
 def morphOp(mask, kernelsize):
 	kernel = np.ones((kernelsize, kernelsize),np.uint8)
 	opening = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations = 1)
-	# fig = plt.figure()
-	# a=fig.add_subplot(1,2,1)
-	# imgplot = plt.imshow(mask)
-	# a.set_title('Normal')
-	# a=fig.add_subplot(1,2,2)
-	# imgplot = plt.imshow(opening)
-	# a.set_title('Opening')
-	# plt.show()
+	# if plot:
+		# fig = plt.figure()
+		# a=fig.add_subplot(1,2,1)
+		# imgplot = plt.imshow(mask, cmap='gray')
+		# a.set_title('Normal')
+		# a=fig.add_subplot(1,2,2)
+		# imgplot = plt.imshow(opening, cmap='gray')
+		# a.set_title('Opening')
+		# plt.show()
+
 	return opening
 
 def morphDil(mask, kernelsize):
@@ -76,27 +81,28 @@ def cellSize(cell_coords):
 	return sizes
 
 def printWholeImages(mask, ch1, ch2, ch3, ch4, ch1_m):
-	print np.unique(mask)
-	# fig = plt.figure()
-	# a=fig.add_subplot(2,3,1)
-	# imgplot = plt.imshow(ch1)
-	# a.set_title('Ch1')
-	# a=fig.add_subplot(2,3,2)
-	# imgplot = plt.imshow(ch2)
-	# a.set_title('Ch2')
-	# a=fig.add_subplot(2,3,3)
-	# imgplot = plt.imshow(ch3)
-	# a.set_title('Ch3')
-	# a=fig.add_subplot(2,3,4)
-	# imgplot = plt.imshow(ch4)
-	# a.set_title('Ch4')
-	# a=fig.add_subplot(2,3,5)
-	# imgplot = plt.imshow(ch1_m)
-	# a.set_title('Ch1_Masked')
-	# a=fig.add_subplot(2,3,6)
-	# imgplot = plt.imshow(mask)
-	# a.set_title('Mask')
-	# plt.show()
+	# print np.unique(mask)
+	if plot:
+		fig = plt.figure()
+		a=fig.add_subplot(2,3,1)
+		imgplot = plt.imshow(ch1, cmap='gray')
+		a.set_title('Ch1')
+		a=fig.add_subplot(2,3,2)
+		imgplot = plt.imshow(ch2, cmap='gray')
+		a.set_title('Ch2')
+		a=fig.add_subplot(2,3,3)
+		imgplot = plt.imshow(ch3, cmap='gray')
+		a.set_title('Ch3')
+		a=fig.add_subplot(2,3,4)
+		imgplot = plt.imshow(ch4, cmap='gray')
+		a.set_title('Ch4')
+		a=fig.add_subplot(2,3,5)
+		imgplot = plt.imshow(mask, cmap='gray')
+		a.set_title('Mask')
+		a=fig.add_subplot(2,3,6)
+		imgplot = plt.imshow(ch1_m, cmap='gray')
+		a.set_title('Ch1 + Mask')
+		plt.show()
 
 def plotHistogram(x, min_x, max_x):
 	# the histogram of the data
@@ -115,26 +121,39 @@ def printSingleCroppedCells(ch1, ch2, ch3, ch4, ch1_m, mask, cell_coords):
 	# print "# of cells in image", len(cell_coords)
 	for i in xrange(len(cell_coords)):
 		cell = cell_coords[i]
-		fig = plt.figure()
-		a=fig.add_subplot(2,3,1)
-		imgplot = plt.imshow(ch1[cell["y_min"]:cell["y_max"],cell["x_min"]:cell["x_max"]])
-		a.set_title('Ch1')
-		a=fig.add_subplot(2,3,2)
-		imgplot = plt.imshow(ch2[cell["y_min"]:cell["y_max"],cell["x_min"]:cell["x_max"]])
-		a.set_title('Ch2')
-		a=fig.add_subplot(2,3,3)
-		imgplot = plt.imshow(ch3[cell["y_min"]:cell["y_max"],cell["x_min"]:cell["x_max"]])
-		a.set_title('Ch3')
-		a=fig.add_subplot(2,3,4)
-		imgplot = plt.imshow(ch4[cell["y_min"]:cell["y_max"],cell["x_min"]:cell["x_max"]])
-		a.set_title('Ch4')
-		a=fig.add_subplot(2,3,5)
-		imgplot = plt.imshow(ch1_m[cell["y_min"]:cell["y_max"],cell["x_min"]:cell["x_max"]])
-		a.set_title('Ch1_Masked')
-		a=fig.add_subplot(2,3,6)
-		imgplot = plt.imshow(mask[cell["y_min"]:cell["y_max"],cell["x_min"]:cell["x_max"]])
-		a.set_title('Mask')
-		# plt.show()	
+		if plot:
+			fig = plt.figure()
+			a=fig.add_subplot(2,3,1)
+			imgplot = plt.imshow(ch1[cell["y_min"]:cell["y_max"],cell["x_min"]:cell["x_max"]], cmap='gray')
+			a.set_title('Ch1')
+			a=fig.add_subplot(2,3,2)
+			imgplot = plt.imshow(ch2[cell["y_min"]:cell["y_max"],cell["x_min"]:cell["x_max"]], cmap='gray')
+			a.set_title('Ch2')
+			a=fig.add_subplot(2,3,3)
+			imgplot = plt.imshow(ch3[cell["y_min"]:cell["y_max"],cell["x_min"]:cell["x_max"]], cmap='gray')
+			a.set_title('Ch3')
+			a=fig.add_subplot(2,3,4)
+			imgplot = plt.imshow(ch4[cell["y_min"]:cell["y_max"],cell["x_min"]:cell["x_max"]], cmap='gray')
+			a.set_title('Ch4')
+			a=fig.add_subplot(2, 3, 5)
+			imgplot = plt.imshow(mask[cell["y_min"]:cell["y_max"],cell["x_min"]:cell["x_max"]], cmap='gray')
+			a.set_title('Mask')
+			a=fig.add_subplot(2, 3, 6)
+			imgplot = plt.imshow(ch1_m[cell["y_min"]:cell["y_max"],cell["x_min"]:cell["x_max"]], cmap='gray')
+			a.set_title('Ch1 + Mask')
+			plt.show()
+
+def printMaskandChannel(mask, ch1):
+	pass
+	# if plot:
+	# 	fig = plt.figure()
+	# 	a=fig.add_subplot(1,2,1)
+	# 	imgplot = plt.imshow(ch1, cmap='gray')
+	# 	a.set_title('Ch1 Image')
+	# 	a=fig.add_subplot(1,2,2)
+	# 	imgplot = plt.imshow(mask, cmap='gray')
+	# 	a.set_title('Mask')
+	# 	plt.show()
 
 def detectLabel(cell, cell_mask):
 	mean1 = np.mean(cell[0,0,:,:][cell_mask==1])
@@ -205,20 +224,21 @@ def storeData(ch1, ch2, ch3, ch4, mask, cell_coords, imagewidth):
 			cell_container[0, 2, 0:width, 0:height] = ch3[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]]
 			cell_container[0, 3, 0:width, 0:height] = ch4[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]]
 			cell_mask[0:width, 0:height] = mask[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]]
-									
-			# resize to fit boundary	
+
+			# resize to fit boundary
 
 		y_temp = detectLabel(cell_container, cell_mask)
 
 		# print y_temp
-		# plt.imshow(cell_container[0, 0, :,:])
-		# plt.show()
+		# if plot:
+			# plt.imshow(cell_container[0, 0, :,:])
+			# plt.show()
 		cells_per_image = np.vstack((cells_per_image, cell_container))
 		labels_per_image = np.vstack((labels_per_image, y_temp))
 	return cells_per_image, labels_per_image
 
 # Path to directory where images are stored
-DIR = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/TIF_images/Ex3_ch-PGP_rb-CGRP_mo-RIIb/'
+DIR = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/TIF_images/Ex1_ch-PGP_rb-CGRP_mo-RIIb/'
 
 images_files = os.listdir(DIR) # use this for full dataset
 print "# of image files, including DIBs and all channels:", len(images_files)
@@ -251,10 +271,10 @@ padding = 10
 kernelsize = 10
 # Cell cropping extension: Recommend 10
 cell_pad = 10
-# Cellsizes (32*32) and (128 * 128) 
+# Cellsizes (32*32) and (128 * 128)
 minimum_cellwidth = 18
 maximum_cellwidth = 128
-imagewidth = 80
+imagewidth = 66
 
 # mask dilation for cropping of final images: Recommend 5
 dilation_coef = 5
@@ -304,23 +324,25 @@ for i in masks[0:max_mask]:
 	# if temp_max_ch3 > max_ch3:
 	# 	max_ch3 = temp_max_ch3
 	# if temp_max_ch4 > max_ch4:
-	# 	max_ch4 = temp_max_ch4 
+	# 	max_ch4 = temp_max_ch4
 
 	# Storing cell images in array
 	cell_coords = detectBlobs(mask, cell_pad, minimum_cellwidth**2, 8000)
 	# Mask dilation for final cropping
 	mask = morphDil(mask, dilation_coef)
 	cells_per_image, labels_per_image = storeData(ch1, ch2, ch3, ch4, mask, cell_coords, imagewidth)
-	cells = np.vstack((cells, cells_per_image))	
+	cells = np.vstack((cells, cells_per_image))
 	labels = np.vstack((labels, labels_per_image))
 	if masks.index(i)%10 == 0:
 		print "Image no.", masks.index(i)
 		print "Number of used cells:", cells.shape[0]
-	
+
 
 	# printing images
-	# printWholeImages(mask, ch1, ch2, ch3, ch4, ch1_m)
-	# printSingleCroppedCells(ch1, ch2, ch3, ch4, ch1_m, mask, cell_coords)
+	if plot:
+		printMaskandChannel(mask,ch1)
+		printWholeImages(mask, ch1, ch2, ch3, ch4, ch1_m)
+		printSingleCroppedCells(ch1, ch2, ch3, ch4, ch1_m, mask, cell_coords)
 	# cellSizes.append(cellSize(cell_coords))
 
 print cells.shape
@@ -335,5 +357,5 @@ print labels
 # frequencies = sum(cellSizes, [])
 # plotHistogram(frequencies, minimum_cellwidth**2, 8000)
 
-# np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/PreparedData/all_channels_80_80_full_no_zeros_in_cells", cells, allow_pickle=True, fix_imports=True)
-# np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/PreparedData/labels_80_80_full_no_zeros_in_cells", labels.astype(int), allow_pickle=True, fix_imports=True)
+# np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/all_channels_66_66_full_no_zeros_in_cells", cells, allow_pickle=True, fix_imports=True)
+# np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/labels_66_66_full_no_zeros_in_cells", labels.astype(int), allow_pickle=True, fix_imports=True)

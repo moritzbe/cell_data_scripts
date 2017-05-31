@@ -18,7 +18,8 @@ masks = [DIR+i for i in images_files if 'o1.TIF' in i]
 print "# of DIBs:", len(dibs)
 print "# of Masks:", len(masks)
 print "# of images:", (len(tifs)-len(masks))/4
-print "# of images without masks:", (len(tifs)-len(masks))/4 - len(masks)
+print "# of images including channels:", (len(tifs)-len(masks))
+print "# of images without masks:", ((len(tifs)-len(masks))/4 - len(masks))*4
 # If there is too much noise in the TIF, no mask can be produced.
 
 
