@@ -1,13 +1,13 @@
 % List all files in folder
-listing = dir('/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/TIF_images/Ex3_ch-PGP_rb-CGRP_mo-RIIb');
-file = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/TIF_images/Ex3_ch-PGP_rb-CGRP_mo-RIIb/';
+listing = dir('/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/TIF_images/Ex3_ch-PGP');
+file = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/TIF_images/Ex3_ch-PGP/';
 
 % Iterate through all files and look for DIBs
 % for idx = 1:numel(listing)
 % relevant files start at idx = 4, idx <4 gives filestructures
 for idx = 3:numel(listing)
     filename = listing(idx);
-    if ~isempty(strfind(filename.name,'o1.DIB')) 
+    if ~isempty(strfind(filename.name,'o1.DIB'))
        filename.name
        pixels = readcdib(filename.name, file);
        idx
@@ -39,7 +39,7 @@ function pixels = readcdib(filename, file)
     startIdx = 1;
     endIdx = biWidth * biHeight * double(biBitCount) / 8;
     pixels = reshape(typecast(buffer(52 + (startIdx:endIdx)), 'uint16'), [biWidth biHeight]);
-    
+
     % remove .DIB extension, and add new format
     filename = strcat(filename(1:end-4), '.TIF');
     imwrite(pixels, filename);

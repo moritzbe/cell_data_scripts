@@ -4,9 +4,11 @@ import matplotlib.pyplot as plt
 from scipy import ndimage as nd
 import cv2
 import code
-
+import re
+import os.path
+# replacin DAPI with ch1 bleed through
 plot = False
-prevent_bleed_through = True
+ex = 1
 
 def binaryMask(mask, padding=0, kernelsize = 10):
 	# print np.unique(mask, return_counts=True)
@@ -145,22 +147,22 @@ def printSingleCroppedCells(ch1, ch2, ch3, ch4, ch1_m, mask, cell_coords):
 			plt.show()
 
 def printMaskandChannel(mask, ch1):
-	pass
-	# if plot:
-	# 	fig = plt.figure()
-	# 	a=fig.add_subplot(1,2,1)
-	# 	imgplot = plt.imshow(ch1, cmap='gray')
-	# 	a.set_title('Ch1 Image')
-	# 	a=fig.add_subplot(1,2,2)
-	# 	imgplot = plt.imshow(mask, cmap='gray')
-	# 	a.set_title('Mask')
-	# 	plt.show()
+	if plot:
+		fig = plt.figure()
+		a=fig.add_subplot(1,2,1)
+		imgplot = plt.imshow(ch1, cmap='gray')
+		a.set_title('Ch1 Image')
+		a=fig.add_subplot(1,2,2)
+		imgplot = plt.imshow(mask, cmap='gray')
+		a.set_title('Mask')
+		plt.show()
 
 def detectLabel(cell, cell_mask):
 	mean1 = np.mean(cell[0,0,:,:][cell_mask==1])
 	mean2 = np.mean(cell[0,1,:,:][cell_mask==1])
 	mean3 = np.mean(cell[0,2,:,:][cell_mask==1])
 	mean4 = np.mean(cell[0,3,:,:][cell_mask==1])
+	mean5 = np.mean(cell[0,4,:,:][cell_mask==1])
 	# mean4 = np.mean(cell[0,3,:,:][np.where(cell[0,3,:,:]>0)])
 
 
@@ -184,46 +186,51 @@ def detectLabel(cell, cell_mask):
 	else:
 		print "Segmentation error"
 		print mean1, mean2, mean3, mean4
-	return np.array([label, mean1, mean2, mean3, mean4])
+	return np.array([label, mean1, mean2, mean3, mean4, mean5])
 
 
-def storeData(ch1, ch2, ch3, ch4, mask, cell_coords, imagewidth):
+def storeData(ch1, ch2, ch3, ch4, ch1_b, mask, cell_coords, imagewidth):
 	# somehow cells are turned 90 degrees
 	ch1 = ch1 * mask
 	ch2 = ch2 * mask
 	ch3 = ch3 * mask
 	ch4 = ch4 * mask
-	cells_per_image = np.empty([0, 4, imagewidth,imagewidth])
-	labels_per_image = np.empty([0, 5])
+	ch1_b = ch1_b * mask
+	cells_per_image = np.empty([0, 5, imagewidth,imagewidth])
+	labels_per_image = np.empty([0, 6])
 	for item in cell_coords:
 		height = item["x_max"] - item["x_min"]
 		width = item["y_max"] - item["y_min"]
 		# listing, label, channels, means, pixels, pixels
-		cell_container = np.zeros([1, 4, imagewidth, imagewidth])
+		cell_container = np.zeros([1, 5, imagewidth, imagewidth])
 		cell_mask = np.zeros([imagewidth, imagewidth])
 		if (width > imagewidth) & (height <= imagewidth):
 			cell_container[0, 0, :, 0:height] = cv2.resize(ch1[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (height, imagewidth), interpolation = cv2.INTER_LINEAR)
 			cell_container[0, 1, :, 0:height] = cv2.resize(ch2[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (height, imagewidth), interpolation = cv2.INTER_LINEAR)
 			cell_container[0, 2, :, 0:height] = cv2.resize(ch3[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (height, imagewidth), interpolation = cv2.INTER_LINEAR)
 			cell_container[0, 3, :, 0:height] = cv2.resize(ch4[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (height, imagewidth), interpolation = cv2.INTER_LINEAR)
+			cell_container[0, 4, :, 0:height] = cv2.resize(ch1_b[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (height, imagewidth), interpolation = cv2.INTER_LINEAR)
 			cell_mask[:, 0:height] = cv2.resize(mask[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (height, imagewidth), interpolation = cv2.INTER_LINEAR)
 		elif (width <= imagewidth) & (height > imagewidth):
 			cell_container[0, 0, 0:width,:] = cv2.resize(ch1[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, width), interpolation = cv2.INTER_LINEAR)
 			cell_container[0, 1, 0:width,:] = cv2.resize(ch2[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, width), interpolation = cv2.INTER_LINEAR)
 			cell_container[0, 2, 0:width,:] = cv2.resize(ch3[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, width), interpolation = cv2.INTER_LINEAR)
 			cell_container[0, 3, 0:width,:] = cv2.resize(ch4[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, width), interpolation = cv2.INTER_LINEAR)
+			cell_container[0, 4, 0:width,:] = cv2.resize(ch1_b[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, width), interpolation = cv2.INTER_LINEAR)
 			cell_mask[0:width,:] = cv2.resize(mask[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, width), interpolation = cv2.INTER_LINEAR)
 		elif (width > imagewidth) & (height > imagewidth):
 			cell_container[0, 0, :,:] = cv2.resize(ch1[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, imagewidth), interpolation = cv2.INTER_LINEAR)
 			cell_container[0, 1, :,:] = cv2.resize(ch2[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, imagewidth), interpolation = cv2.INTER_LINEAR)
 			cell_container[0, 2, :,:] = cv2.resize(ch3[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, imagewidth), interpolation = cv2.INTER_LINEAR)
 			cell_container[0, 3, :,:] = cv2.resize(ch4[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, imagewidth), interpolation = cv2.INTER_LINEAR)
+			cell_container[0, 4, :,:] = cv2.resize(ch1_b[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, imagewidth), interpolation = cv2.INTER_LINEAR)
 			cell_mask[:,:] = cv2.resize(mask[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]], (imagewidth, imagewidth), interpolation = cv2.INTER_LINEAR)
 		else:
 			cell_container[0, 0, 0:width, 0:height] = ch1[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]]
 			cell_container[0, 1, 0:width, 0:height] = ch2[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]]
 			cell_container[0, 2, 0:width, 0:height] = ch3[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]]
 			cell_container[0, 3, 0:width, 0:height] = ch4[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]]
+			cell_container[0, 4, 0:width, 0:height] = ch1_b[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]]
 			cell_mask[0:width, 0:height] = mask[item["y_min"]:item["y_max"],item["x_min"]:item["x_max"]]
 
 			# resize to fit boundary
@@ -239,13 +246,12 @@ def storeData(ch1, ch2, ch3, ch4, mask, cell_coords, imagewidth):
 	return cells_per_image, labels_per_image
 
 # Path to directory where images are stored
-DIR = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/TIF_images/Ex3_ch-PGP_rb-CGRP_mo-RIIb/'
-if prevent_bleed_through:
-	DIR2 = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/TIF_images/Ex3_ch-PGP/'
-	images_files2 = os.listdir(DIR2) # use this for full dataset
-	tifs2 = [DIR2+i for i in images_files2 if '.TIF' in i]
-	dibs2 = [DIR2+i for i in images_files2 if '.DIB' in i]
-	masks2 = [DIR2+i for i in images_files2 if 'o1.TIF' in i]
+DIR = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex' + str(ex) + '/TIF_images/Ex' + str(ex) + '_ch-PGP_rb-CGRP_mo-RIIb/'
+DIR2 = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex' + str(ex) + '/TIF_images/Ex' + str(ex) + '_ch-PGP/'
+images_files2 = os.listdir(DIR2) # use this for full dataset
+tifs2 = [DIR2+i for i in images_files2 if '.TIF' in i]
+dibs2 = [DIR2+i for i in images_files2 if '.DIB' in i]
+masks2 = [DIR2+i for i in images_files2 if 'o1.TIF' in i]
 
 images_files = os.listdir(DIR) # use this for full dataset
 print "# of image files, including DIBs and all channels:", len(images_files)
@@ -292,11 +298,8 @@ max_mask = len(masks)-1
 
 
 cellSizes = []
-cells = np.empty([0, 4, imagewidth, imagewidth])
-labels = np.empty([0, 5])
-if prevent_bleed_through:
-	cells = np.empty([0, 5, imagewidth, imagewidth])
-	labels = np.empty([0, 6])
+cells = np.empty([0, 5, imagewidth, imagewidth])
+labels = np.empty([0, 6])
 # max_ch1 = 0
 # max_ch2 = 0
 # max_ch3 = 0
@@ -304,25 +307,32 @@ if prevent_bleed_through:
 # Looping over DIB masks and all channels to select image:
 for i in masks[0:max_mask]:
 	# Masks have to be point-reflected
-	mask = binaryMask(plt.imread(i[:-6]+"o1.TIF"), padding, kernelsize)
+	# replace string for ch1_b
+	i_b = re.sub('_rb-CGRP_mo-RIIb', '', i)
+	i_b = re.sub('161020140001', '161018170001', i_b) # ex3161018170001
+
+	# check if file exists:
+	if os.path.isfile(i_b)==False:
+		continue
+		
+	mask = binaryMask(plt.imread(i_b[:-6]+"o1.TIF"), padding, kernelsize)
+	# mask_old = binaryMask(plt.imread(i[:-6]+"o1.TIF"), padding, kernelsize)
+
+	if plot:
+		printMaskandChannel(mask,mask_old)
+
 	ch1 = plt.imread(i[:-6]+"d0.TIF")
-	code.interact(local=dict(globals(), **locals()))
-		if prevent_bleed_through:
-		# replace string for ch1_b
-		i_b = re.sub('_rb-CGRP_mo-RIIb', '', i)
-		i_b = re.sub('161020140001', '161018170001', i)
-		ch1_b = plt.imread(i_b[:-6]+"d0.TIF")
+	ch1_b = plt.imread(i_b[:-6]+"d0.TIF")
 	ch2 = plt.imread(i[:-6]+"d1.TIF")
 	ch3 = plt.imread(i[:-6]+"d2.TIF")
 	ch4 = plt.imread(i[:-6]+"d3.TIF")
 	# ZeroPadding
 	ch1 = np.lib.pad(ch1, padding, zeroPad)
-	if prevent_bleed_through:
-		ch1_b = np.lib.pad(ch1_b, padding, zeroPad)
-		pass
+	ch1_b = np.lib.pad(ch1_b, padding, zeroPad)
 	ch2 = np.lib.pad(ch2, padding, zeroPad)
 	ch3 = np.lib.pad(ch3, padding, zeroPad)
 	ch4 = np.lib.pad(ch4, padding, zeroPad)
+
 
 	# Applying the mask
 	ch1_m = ch1 * mask
@@ -341,10 +351,7 @@ for i in masks[0:max_mask]:
 	cell_coords = detectBlobs(mask, cell_pad, minimum_cellwidth**2, 8000)
 	# Mask dilation for final cropping
 	mask = morphDil(mask, dilation_coef)
-	cells_per_image, labels_per_image = storeData(ch1, ch2, ch3, ch4, mask, cell_coords, imagewidth)
-	if prevent_bleed_through:
-		cells_per_image, labels_per_image = storeData(ch1, ch1_b, ch2, ch3, ch4, mask, cell_coords, imagewidth)
-
+	cells_per_image, labels_per_image = storeData(ch1, ch2, ch3, ch4, ch1_b, mask, cell_coords, imagewidth)
 	cells = np.vstack((cells, cells_per_image))
 	labels = np.vstack((labels, labels_per_image))
 	if masks.index(i)%10 == 0:
@@ -354,11 +361,10 @@ for i in masks[0:max_mask]:
 
 	# printing images
 	if plot:
-		printMaskandChannel(mask,ch1)
+		printMaskandChannel(mask,mask_old)
 		printWholeImages(mask, ch1, ch2, ch3, ch4, ch1_m)
 		printSingleCroppedCells(ch1, ch2, ch3, ch4, ch1_m, mask, cell_coords)
 	# cellSizes.append(cellSize(cell_coords))
-
 print cells.shape
 print labels.shape
 uniques, frequency = np.unique(labels[:,0], return_counts=True)
@@ -371,5 +377,6 @@ print labels
 # frequencies = sum(cellSizes, [])
 # plotHistogram(frequencies, minimum_cellwidth**2, 8000)
 
-np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/PreparedData/all_channels_66_66_full_no_zeros_in_cells", cells, allow_pickle=True, fix_imports=True)
-np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/PreparedData/labels_66_66_full_no_zeros_in_cells", labels.astype(int), allow_pickle=True, fix_imports=True)
+code.interact(local=dict(globals(), **locals()))
+np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex" + str(ex) + "/PreparedData/all_channels_66_66_full_no_zeros_in_cells_no_bleed_trough", cells, allow_pickle=True, fix_imports=True)
+np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex" + str(ex) + "/PreparedData/labels_66_66_full_no_zeros_in_cells_no_bleed_trough", labels.astype(int), allow_pickle=True, fix_imports=True)
