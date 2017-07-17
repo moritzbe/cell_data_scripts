@@ -5,8 +5,7 @@ from scipy import ndimage as nd
 import cv2
 import code
 
-plot = False
-prevent_bleed_through = True
+plot = True
 
 def binaryMask(mask, padding=0, kernelsize = 10):
 	# print np.unique(mask, return_counts=True)
@@ -85,24 +84,24 @@ def printWholeImages(mask, ch1, ch2, ch3, ch4, ch1_m):
 	# print np.unique(mask)
 	if plot:
 		fig = plt.figure()
-		a=fig.add_subplot(2,3,1)
+		a=fig.add_subplot(2,2,1)
 		imgplot = plt.imshow(ch1, cmap='gray')
-		a.set_title('Ch1')
-		a=fig.add_subplot(2,3,2)
+		a.set_title('Ch1-PGP')
+		a=fig.add_subplot(2,2,2)
 		imgplot = plt.imshow(ch2, cmap='gray')
-		a.set_title('Ch2')
-		a=fig.add_subplot(2,3,3)
+		a.set_title('Ch2-CGRP')
+		a=fig.add_subplot(2,2,3)
 		imgplot = plt.imshow(ch3, cmap='gray')
-		a.set_title('Ch3')
-		a=fig.add_subplot(2,3,4)
+		a.set_title('Ch3-RIIb')
+		a=fig.add_subplot(2,2,4)
 		imgplot = plt.imshow(ch4, cmap='gray')
-		a.set_title('Ch4')
-		a=fig.add_subplot(2,3,5)
-		imgplot = plt.imshow(mask, cmap='gray')
-		a.set_title('Mask')
-		a=fig.add_subplot(2,3,6)
-		imgplot = plt.imshow(ch1_m, cmap='gray')
-		a.set_title('Ch1 + Mask')
+		a.set_title('Ch4-DAPI')
+			# a=fig.add_subplot(2,2,5)
+			# imgplot = plt.imshow(mask, cmap='gray')
+			# a.set_title('Mask')
+			# a=fig.add_subplot(2,2,6)
+			# imgplot = plt.imshow(ch1_m, cmap='gray')
+			# a.set_title('Ch1 + Mask')
 		plt.show()
 
 def plotHistogram(x, min_x, max_x):
@@ -240,12 +239,12 @@ def storeData(ch1, ch2, ch3, ch4, mask, cell_coords, imagewidth):
 
 # Path to directory where images are stored
 DIR = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/TIF_images/Ex3_ch-PGP_rb-CGRP_mo-RIIb/'
-if prevent_bleed_through:
-	DIR2 = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/TIF_images/Ex3_ch-PGP/'
-	images_files2 = os.listdir(DIR2) # use this for full dataset
-	tifs2 = [DIR2+i for i in images_files2 if '.TIF' in i]
-	dibs2 = [DIR2+i for i in images_files2 if '.DIB' in i]
-	masks2 = [DIR2+i for i in images_files2 if 'o1.TIF' in i]
+# _bleed_through:
+# 	DIR2 = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/TIF_images/Ex3_ch-PGP/'
+# 	images_files2 = os.listdir(DIR2) # use this for full dataset
+# 	tifs2 = [DIR2+i for i in images_files2 if '.TIF' in i]
+# 	dibs2 = [DIR2+i for i in images_files2 if '.DIB' in i]
+# 	masks2 = [DIR2+i for i in images_files2 if 'o1.TIF' in i]
 
 images_files = os.listdir(DIR) # use this for full dataset
 print "# of image files, including DIBs and all channels:", len(images_files)
@@ -294,9 +293,9 @@ max_mask = len(masks)-1
 cellSizes = []
 cells = np.empty([0, 4, imagewidth, imagewidth])
 labels = np.empty([0, 5])
-if prevent_bleed_through:
-	cells = np.empty([0, 5, imagewidth, imagewidth])
-	labels = np.empty([0, 6])
+# if prevent_bleed_through:
+# 	cells = np.empty([0, 5, imagewidth, imagewidth])
+# 	labels = np.empty([0, 6])
 # max_ch1 = 0
 # max_ch2 = 0
 # max_ch3 = 0
@@ -306,20 +305,18 @@ for i in masks[0:max_mask]:
 	# Masks have to be point-reflected
 	mask = binaryMask(plt.imread(i[:-6]+"o1.TIF"), padding, kernelsize)
 	ch1 = plt.imread(i[:-6]+"d0.TIF")
-	code.interact(local=dict(globals(), **locals()))
-		if prevent_bleed_through:
-		# replace string for ch1_b
-		i_b = re.sub('_rb-CGRP_mo-RIIb', '', i)
-		i_b = re.sub('161020140001', '161018170001', i)
-		ch1_b = plt.imread(i_b[:-6]+"d0.TIF")
+	# code.interact(local=dict(globals(), **locals()))
+		# if prevent_bleed_through:
+		# # replace string for ch1_b
+		# i_b = re.sub('_rb-CGRP_mo-RIIb', '', i)
+		# i_b = re.sub('161020140001', '161018170001', i)
+		# ch1_b = plt.imread(i_b[:-6]+"d0.TIF")
 	ch2 = plt.imread(i[:-6]+"d1.TIF")
 	ch3 = plt.imread(i[:-6]+"d2.TIF")
 	ch4 = plt.imread(i[:-6]+"d3.TIF")
 	# ZeroPadding
 	ch1 = np.lib.pad(ch1, padding, zeroPad)
-	if prevent_bleed_through:
-		ch1_b = np.lib.pad(ch1_b, padding, zeroPad)
-		pass
+
 	ch2 = np.lib.pad(ch2, padding, zeroPad)
 	ch3 = np.lib.pad(ch3, padding, zeroPad)
 	ch4 = np.lib.pad(ch4, padding, zeroPad)
@@ -342,8 +339,6 @@ for i in masks[0:max_mask]:
 	# Mask dilation for final cropping
 	mask = morphDil(mask, dilation_coef)
 	cells_per_image, labels_per_image = storeData(ch1, ch2, ch3, ch4, mask, cell_coords, imagewidth)
-	if prevent_bleed_through:
-		cells_per_image, labels_per_image = storeData(ch1, ch1_b, ch2, ch3, ch4, mask, cell_coords, imagewidth)
 
 	cells = np.vstack((cells, cells_per_image))
 	labels = np.vstack((labels, labels_per_image))

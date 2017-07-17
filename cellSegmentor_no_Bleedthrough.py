@@ -7,7 +7,7 @@ import code
 import re
 import os.path
 # replacin DAPI with ch1 bleed through
-plot = False
+plot = True
 
 def binaryMask(mask, padding=0, kernelsize = 10):
 	# print np.unique(mask, return_counts=True)
@@ -152,7 +152,7 @@ def detectBlobs(mask, mask_test, xoffset, yoffset, cell_pad, minimum_cellsize, m
 		#print "new_xoffset ", new_xoffset
 		#print "new_yoffset ", new_yoffset
 	base_array[base_array > 0]=1
-	# onlyadjust(base_array, mask_test)
+	onlyadjust(base_array, mask_test)
 	return cell_coords, discard_count, base_array, new_xoffset, new_yoffset
 
 def zeroPad(vector, pad_width, iaxis, kwargs):
@@ -203,7 +203,7 @@ def plotHistogram(x, min_x, max_x):
 	plt.axis([min_x, max_x, None, None])
 	plt.grid(False)
 
-	plt.show()
+	# plt.show()
 
 
 def printSingleCroppedCells(ch1, ch2, ch3, ch4, ch1_m, mask, cell_coords):
@@ -244,7 +244,7 @@ def printMaskandChannel(mask, shifted_mask, test_mask):
 	a=fig.add_subplot(1,3,3)
 	imgplot = plt.imshow(test_mask, cmap='gray')
 	a.set_title('Test Mask (PGP-clean)')
-	plt.show()
+	# plt.show()
 	# # if plot:
 	# fig = plt.figure()
 	# a=fig.add_subplot(1,2,1)
@@ -344,195 +344,222 @@ def storeData(ch1, ch2, ch3, ch4, mask, cell_coords, imagewidth):
 		labels_per_image = np.vstack((labels_per_image, y_temp))
 	return cells_per_image, labels_per_image
 
-for i in [2,3]:
 
-	ex = i
+ex = 3
 
-	# Path to directory where images are stored
-	DIR = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex' + str(ex) + '/TIF_images/Ex' + str(ex) + '_ch-PGP_rb-CGRP_mo-RIIb/'
-	DIR2 = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex' + str(ex) + '/TIF_images/Ex' + str(ex) + '_ch-PGP/'
-	images_files2 = os.listdir(DIR2) # use this for full dataset
-	tifs2 = [DIR2+i for i in images_files2 if '.TIF' in i]
-	dibs2 = [DIR2+i for i in images_files2 if '.DIB' in i]
-	masks2 = [DIR2+i for i in images_files2 if 'o1.TIF' in i]
+# Path to directory where images are stored
+DIR = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex' + str(ex) + '/TIF_images/Ex' + str(ex) + '_ch-PGP_rb-CGRP_mo-RIIb/'
+DIR2 = '/Volumes/MoritzBertholdHD/CellData/Experiments/Ex' + str(ex) + '/TIF_images/Ex' + str(ex) + '_ch-PGP/'
+images_files2 = os.listdir(DIR2) # use this for full dataset
+tifs2 = [DIR2+i for i in images_files2 if '.TIF' in i]
+dibs2 = [DIR2+i for i in images_files2 if '.DIB' in i]
+masks2 = [DIR2+i for i in images_files2 if 'o1.TIF' in i]
 
-	images_files = os.listdir(DIR) # use this for full dataset
-	print "# of image files, including DIBs and all channels:", len(images_files)
+images_files = os.listdir(DIR) # use this for full dataset
+print "# of image files, including DIBs and all channels:", len(images_files)
 
-	tifs = [DIR+i for i in images_files if '.TIF' in i]
-	print "# of TIFs:", len(tifs)
+tifs = [DIR+i for i in images_files if '.TIF' in i]
+print "# of TIFs:", len(tifs)
 
-	dibs = [DIR+i for i in images_files if '.DIB' in i]
-	masks = [DIR+i for i in images_files if 'o1.TIF' in i]
-	print "# of DIBs:", len(dibs)
-	print "# of Masks:", len(masks)
-	print "# of images:", (len(tifs)-len(masks))/4
-	print "# of images without masks:", (len(tifs)-len(masks))/4 - len(masks)
-	# If there is too much noise in the TIF, no mask can be produced.
-
+dibs = [DIR+i for i in images_files if '.DIB' in i]
+masks = [DIR+i for i in images_files if 'o1.TIF' in i]
+print "# of DIBs:", len(dibs)
+print "# of Masks:", len(masks)
+print "# of images:", (len(tifs)-len(masks))/4
+print "# of images without masks:", (len(tifs)-len(masks))/4 - len(masks)
+# If there is too much noise in the TIF, no mask can be produced.
 
 
 
 
 
-	##### ------------- Settings ------------------ #####
-	##### ----------------------------------------- #####
 
-	# Opening Kernel size: Recommend 10
-	kernelsize = 10
-	# Cell cropping extension: Recommend 10
-	cell_pad = 10
-	# Cellsizes (32*32) and (128 * 128)
-	minimum_cellwidth = 18
-	maximum_cellwidth = 128
-	imagewidth = 66
+##### ------------- Settings ------------------ #####
+##### ----------------------------------------- #####
 
-	# mask dilation for cropping of final images: Recommend 5
-	dilation_coef = 5
-	# Process images until ith mask
-	max_mask = len(masks)-1
+# Opening Kernel size: Recommend 10
+kernelsize = 10
+# Cell cropping extension: Recommend 10
+cell_pad = 10
+# Cellsizes (32*32) and (128 * 128)
+minimum_cellwidth = 18
+maximum_cellwidth = 128
+imagewidth = 66
 
-	#### ------ ITERATION -------------------------- #####
-	#### ------------------------------------------- #####
+# mask dilation for cropping of final images: Recommend 5
+dilation_coef = 5
+# Process images until ith mask
+max_mask = len(masks)-1
+
+#### ------ ITERATION -------------------------- #####
+#### ------------------------------------------- #####
 
 
-	cellSizes = []
-	cells = np.empty([0, 4, imagewidth, imagewidth])
-	labels = np.empty([0, 5])
+cellSizes = []
+cells = np.empty([0, 4, imagewidth, imagewidth])
+labels = np.empty([0, 5])
 
+if ex ==1:
+	xoffset = -3
+	yoffset = -12
+if ex ==2:
+	xoffset = -122
+	yoffset = 2
+if ex ==3:
+	xoffset = 70
+	yoffset = 10
+	# # second_half:
+	# xoffset = 40
+	# yoffset = 27
+
+faults = 0
+final_discard_count = 0
+for j in xrange(0,max_mask):
+# a = [0,200,1000, 1001, 2000, 2001, 3000, 3001]
+# for j in xrange(0, max_mask/2):
+# for j in xrange(, max_mask):
+	i = masks[j]
+	# Masks have to be point-reflected
+	# replace string for ch1_b
+	i_b = re.sub('_rb-CGRP_mo-RIIb', '', i)
 	if ex ==1:
-		xoffset = -3
-		yoffset = -12
+		i_b = re.sub('161020140001', '161018170001', i_b)
 	if ex ==2:
-		xoffset = -122
-		yoffset = 2
+		i_b = re.sub('161020170001', '161018200001', i_b)
 	if ex ==3:
-		xoffset = 70
-		yoffset = 10
+		i_b = re.sub('161020200001', '161018220001', i_b)
+	# check if file exists:
+	if os.path.isfile(i_b)==False:
+		faults +=1
+		continue
 
+	# Zero Padding around the image
+	# padding = 0
+	padding = np.max([abs(xoffset), abs(yoffset)])+cell_pad + kernelsize + 1
 
-	faults = 0
-	final_discard_count = 0
-	# for j in xrange(0,max_mask):
-	# a = [0,50,51,100,101,150,151, 200,201,250,251,300,301,350,351, 500, 501, 1000, 1001, 2000, 2001, 3000, 3001]
-	for j in xrange(0, max_mask):
-	# for j in a:
-		i = masks[j]
-		# Masks have to be point-reflected
-		# replace string for ch1_b
-		i_b = re.sub('_rb-CGRP_mo-RIIb', '', i)
-		if ex ==1:
-			i_b = re.sub('161020140001', '161018170001', i_b)
-		if ex ==2:
-			i_b = re.sub('161020170001', '161018200001', i_b)
-		if ex ==3:
-			i_b = re.sub('161020200001', '161018220001', i_b)
-		# check if file exists:
-		if os.path.isfile(i_b)==False:
-			faults +=1
-			continue
-
-		# Zero Padding around the image
-		# padding = 0
-		padding = np.max([abs(xoffset), abs(yoffset)])+cell_pad + kernelsize + 1
-
-		mask_test = binaryMask(plt.imread(i_b[:-6]+"o1.TIF"), padding, kernelsize=0)
-		mask = binaryMask(plt.imread(i[:-6]+"o1.TIF"), padding, kernelsize)
-		cell_coords, discard_count, mask, new_xoffset, new_yoffset = detectBlobs(mask, mask_test, xoffset, yoffset, cell_pad, minimum_cellwidth**2, 8000)
-		if new_xoffset <= 20 and masks.index(i)%100 == 0:
-			xoffset += new_xoffset
-			print "Setting new x ", xoffset
-		if new_yoffset <= 20 and masks.index(i)%100 == 0:
-			yoffset += new_yoffset
-			print "Setting new y ", yoffset
-		# code.interact(local=dict(globals(), **locals()))
-
-		# ch1 = plt.imread(i[:-6]+"d0.TIF")
-		ch1 = plt.imread(i_b[:-6]+"d0.TIF")
-		ch2 = plt.imread(i[:-6]+"d1.TIF")
-		ch3 = plt.imread(i[:-6]+"d2.TIF")
-		ch4 = plt.imread(i[:-6]+"d3.TIF")
-		# ZeroPadding
-		# ch1 = np.lib.pad(ch1, padding, zeroPad)
-		ch1 = np.lib.pad(ch1, padding, zeroPad)
-		ch2 = channelShifter(np.lib.pad(ch2, padding, zeroPad), xoffset, yoffset)
-		ch3 = channelShifter(np.lib.pad(ch3, padding, zeroPad), xoffset, yoffset)
-		ch4 = channelShifter(np.lib.pad(ch4, padding, zeroPad), xoffset, yoffset)
-
-		# Applying the mask
-		ch1_m = ch1 * mask
-
-		# # Setting new Maxima - Normalization
-		# if temp_max_ch1 > max_ch1:
-		# 	max_ch1 = temp_max_ch1
-		# if temp_max_ch2 > max_ch2:
-		# 	max_ch2 = temp_max_ch2
-		# if temp_max_ch3 > max_ch3:
-		# 	max_ch3 = temp_max_ch3
-		# if temp_max_ch4 > max_ch4:
-		# 	max_ch4 = temp_max_ch4
-
-		# Storing cell images in array
-
-		final_discard_count += discard_count
-		# Mask dilation for final cropping
-		mask = np.array(mask, dtype="uint16")
-
-		mask = morphDil(mask, dilation_coef)
-		# code.interact(local=dict(globals(), **locals()))
-
-
-		cells_per_image, labels_per_image = storeData(ch1, ch2, ch3, ch4, mask, cell_coords, imagewidth)
-		cells = np.vstack((cells, cells_per_image))
-		labels = np.vstack((labels, labels_per_image))
-		if masks.index(i)%100 == 0:
-			print "Mask no.", masks.index(i)
-			print "Number of used cells:", cells.shape[0]
-			print "Total no. of masks", len(masks)
-
-
-		# printing images
-		if plot:
-			# printMaskandChannel(mask,mask_old)
-			printWholeImages(mask, ch1, ch2, ch3, ch4, ch1_m)
-			printSingleCroppedCells(ch1, ch2, ch3, ch4, ch1_m, mask, cell_coords)
-		# cellSizes.append(cellSize(cell_coords))
-	print "Cells shape ", cells.shape
-	print labels.shape
-	uniques, frequency = np.unique(labels[:,0], return_counts=True)
-	print "Unique labels are:", uniques
-	print "Label Frequencies are:", frequency
-	print "Faults: ", faults
-	print "Discard_count", final_discard_count
-	print "Done with Experiment no ", ex
-
-	# print labels
+	mask_test = binaryMask(plt.imread(i_b[:-6]+"o1.TIF"), padding, kernelsize=0)
+	mask = binaryMask(plt.imread(i[:-6]+"o1.TIF"), padding, kernelsize)
+	cell_coords, discard_count, mask, new_xoffset, new_yoffset = detectBlobs(mask, mask_test, xoffset, yoffset, cell_pad, minimum_cellwidth**2, 8000)
+	if new_xoffset <= 20 and masks.index(i)%100 == 0:
+		xoffset += new_xoffset
+		print "Setting new x ", xoffset
+	if new_yoffset <= 20 and masks.index(i)%100 == 0:
+		yoffset += new_yoffset
+		print "Setting new y ", yoffset
 	# code.interact(local=dict(globals(), **locals()))
-	# Plott Cell Width frequency distribution
-	# frequencies = sum(cellSizes, [])
-	# plotHistogram(frequencies, minimum_cellwidth**2, 8000)
 
-	np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex" + str(ex) + "/PreparedData/all_channels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted", cells, allow_pickle=True, fix_imports=True)
-	np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex" + str(ex) + "/PreparedData/labels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted", labels.astype(int), allow_pickle=True, fix_imports=True)
-	del(cells)
-	del(labels)
-	del(masks)
-	del(i)
-	del(uniques)
-	del(frequency)
-	del(new_yoffset)
-	del(new_xoffset)
-	del(new_check_array)
-	del(check_array)
+	# ch1 = plt.imread(i[:-6]+"d0.TIF")
+	ch1 = plt.imread(i_b[:-6]+"d0.TIF")
+	ch2 = plt.imread(i[:-6]+"d1.TIF")
+	ch3 = plt.imread(i[:-6]+"d2.TIF")
+	ch4 = plt.imread(i[:-6]+"d3.TIF")
+	# ZeroPadding
+	ch1 = np.lib.pad(ch1, padding, zeroPad)
+	ch2 = channelShifter(np.lib.pad(ch2, padding, zeroPad), xoffset, yoffset)
+	ch3 = channelShifter(np.lib.pad(ch3, padding, zeroPad), xoffset, yoffset)
+	ch4 = channelShifter(np.lib.pad(ch4, padding, zeroPad), xoffset, yoffset)
 
+	# Applying the mask
+	ch1_m = ch1 * mask
+
+	# # Setting new Maxima - Normalization
+	# if temp_max_ch1 > max_ch1:
+	# 	max_ch1 = temp_max_ch1
+	# if temp_max_ch2 > max_ch2:
+	# 	max_ch2 = temp_max_ch2
+	# if temp_max_ch3 > max_ch3:
+	# 	max_ch3 = temp_max_ch3
+	# if temp_max_ch4 > max_ch4:
+	# 	max_ch4 = temp_max_ch4
+
+
+
+			# fig = plt.figure()
+			# a=fig.add_subplot(2,3,1)
+			# imgplot = plt.imshow(ch1a, cmap='gray')
+			# a.set_title('Ch1 dirty')
+			# a=fig.add_subplot(2,3,2)
+			# imgplot = plt.imshow(ch1b, cmap='gray')
+			# a.set_title('Ch1 clean')
+			# a=fig.add_subplot(2,3,3)
+			# imgplot = plt.imshow(ch2, cmap='gray')
+			# a.set_title('Shifted ch4')
+			# a=fig.add_subplot(2,3,4)
+			# imgplot = plt.imshow(mask, cmap='gray')
+			# a.set_title('Dirty Mask')
+			# a=fig.add_subplot(2,3,5)
+			# imgplot = plt.imshow(mask_test, cmap='gray')
+			# a.set_title('Clean Mask')
+			# a=fig.add_subplot(2,3,6)
+			# imgplot = plt.imshow(mask_, cmap='gray')
+			# a.set_title('new_mask')
+			# plt.show()
+
+	# Storing cell images in array
+
+	final_discard_count += discard_count
+	# Mask dilation for final cropping
+	mask = np.array(mask, dtype="uint16")
+
+	mask = morphDil(mask, dilation_coef)
+	# code.interact(local=dict(globals(), **locals()))
+
+
+	cells_per_image, labels_per_image = storeData(ch1, ch2, ch3, ch4, mask, cell_coords, imagewidth)
+	cells = np.vstack((cells, cells_per_image))
+	labels = np.vstack((labels, labels_per_image))
+	if masks.index(i)%100 == 0:
+		print "Mask no.", masks.index(i)
+		print "Number of used cells:", cells.shape[0]
+		print "Total no. of masks", len(masks)
+
+
+	# printing images
+	if plot:
+		# printMaskandChannel(mask,mask_old)
+		# printWholeImages(mask, ch1, ch2, ch3, ch4, ch1_m)
+		print("X_offset, ", xoffset)
+		print("Y_offset, ", yoffset)
+		printSingleCroppedCells(ch1, ch2, ch3, ch4, ch1_m, mask, cell_coords)
+	# cellSizes.append(cellSize(cell_coords))
+print "Cells shape ", cells.shape
+print labels.shape
+uniques, frequency = np.unique(labels[:,0], return_counts=True)
+print "Unique labels are:", uniques
+print "Label Frequencies are:", frequency
+print "Faults: ", faults
+print "Discard_count", final_discard_count
+
+# print labels
+# code.interact(local=dict(globals(), **locals()))
+# Plott Cell Width frequency distribution
+# frequencies = sum(cellSizes, [])
+# plotHistogram(frequencies, minimum_cellwidth**2, 8000)
+
+code.interact(local=dict(globals(), **locals()))
+# np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex" + str(ex) + "/PreparedData/all_channels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted", cells, allow_pickle=True, fix_imports=True)
+# np.save("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex" + str(ex) + "/PreparedData/labels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted", labels.astype(int), allow_pickle=True, fix_imports=True)
+print "Done with Experiment no ", ex
+del(cells)
+del(labels)
+del(masks)
+del(i)
+del(uniques)
+del(frequency)
+del(new_yoffset)
+del(new_xoffset)
 print "Donedone"
 
 
 # import numpy as np
 # import matplotlib.pyplot as plt
-# a = np.load("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex1/PreparedData/all_channels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy")
+# a = np.load("/Volumes/MoritzBertholdHD/CellData/Experiments/Ex3/PreparedData/all_channels_66_66_full_no_zeros_in_cells_no_bleed_trough_shifted.npy")
+#
+# new_array = np.vstack((a,b))
+# new_labels = np.vstack((labels_a, labels_b))
+#
 # a.shape
-# image = a[-1,0,:,:]
+# image = a[-1,3,:,:]
 # plt.figure()
 # plt.imshow(image)
 # plt.show()
